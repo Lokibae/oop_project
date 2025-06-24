@@ -2,7 +2,7 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class LoginView extends JFrame {
     private JTextField usernameField;
@@ -11,11 +11,10 @@ public class LoginView extends JFrame {
 
     public LoginView() {
         setTitle("Login");
-        setSize(350, 200);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new GridLayout(4, 2, 5, 5));
+        setSize(400, 300);
+        setLayout(new GridLayout(3, 2, 10, 10));
 
+        // Add components
         add(new JLabel("Username:"));
         usernameField = new JTextField();
         add(usernameField);
@@ -25,31 +24,42 @@ public class LoginView extends JFrame {
         add(passwordField);
 
         loginButton = new JButton("Login");
-        registerButton = new JButton("Register");
-
         add(loginButton);
+
+        registerButton = new JButton("Register");
         add(registerButton);
 
-        loginButton.addActionListener(this::login);
-        registerButton.addActionListener(e -> {
-            dispose();
-            new RegisterView();
-        });
-
-        setVisible(true);
+        setLocationRelativeTo(null); // Center the window
+        setVisible(true);            // Display the window
     }
 
-    private void login(ActionEvent e) {
-        String username = usernameField.getText();
-        String password = new String(passwordField.getPassword());
-
-        // Dummy login logic
-        if (username.equals("admin") && password.equals("admin")) {
-            JOptionPane.showMessageDialog(this, "Login successful!");
-            new AdminDashboardView();
-            dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "Invalid credentials.");
-        }
+    // Getters for controller
+    public String getUsername() {
+        return usernameField.getText();
     }
+
+    public String getPassword() {
+        return new String(passwordField.getPassword());
+    }
+
+    // Action listeners
+    public void setLoginAction(ActionListener listener) {
+        loginButton.addActionListener(listener);
+    }
+
+    public void setRegisterAction(ActionListener listener) {
+        registerButton.addActionListener(listener);
+    }
+
+    // Add this method to clear fields
+    public void clearFields() {
+        usernameField.setText("");
+        passwordField.setText("");
+    }
+
+    public void showMessage(String message) {
+        JOptionPane.showMessageDialog(this, message);
+    }
+
+
 }

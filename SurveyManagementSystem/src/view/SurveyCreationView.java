@@ -1,5 +1,7 @@
 package view;
 
+import model.User;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -11,7 +13,7 @@ public class SurveyCreationView extends JFrame {
     private JComboBox<String> statusBox;
     private JButton createButton;
 
-    public SurveyCreationView() {
+    public SurveyCreationView(User currentUser) {
         setTitle("Survey Creation");
         setSize(400, 300);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

@@ -1,5 +1,7 @@
 package view;
 
+import model.User;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -11,7 +13,7 @@ public class RespondentSurveyView extends JFrame {
     private JButton submitButton;
     private List<JComponent> answerFields;
 
-    public RespondentSurveyView() {
+    public RespondentSurveyView(User user) {
         setTitle("Fill Out Survey");
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

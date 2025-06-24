@@ -2,21 +2,20 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class RegisterView extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
-    private JComboBox<String> roleBox;
-    private JButton registerButton;
+    private JComboBox<String> roleCombo;
+    private JButton registerButton, backButton;
 
     public RegisterView() {
-        setTitle("Register New Account");
-        setSize(350, 200);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new GridLayout(4, 2, 5, 5));
+        setTitle("Register");
+        setSize(400, 300);
+        setLayout(new GridLayout(5, 2, 10, 10));
 
+        // Add components
         add(new JLabel("Username:"));
         usernameField = new JTextField();
         add(usernameField);
@@ -26,29 +25,38 @@ public class RegisterView extends JFrame {
         add(passwordField);
 
         add(new JLabel("Role:"));
-        roleBox = new JComboBox<>(new String[]{"Admin", "Respondent"});
-        add(roleBox);
+        roleCombo = new JComboBox<>(new String[]{"admin", "respondent"});
+        add(roleCombo);
 
         registerButton = new JButton("Register");
         add(registerButton);
 
-        registerButton.addActionListener(this::register);
+        backButton = new JButton("Back to Login");
+        add(backButton);
 
-        setVisible(true);
+        setLocationRelativeTo(null); // Center the window
+
     }
 
-    private void register(ActionEvent e) {
-        String username = usernameField.getText();
-        String password = new String(passwordField.getPassword());
-        String role = (String) roleBox.getSelectedItem();
+    // Getters and setters
+    public String getUsername() { return usernameField.getText(); }
+    public String getPassword() { return new String(passwordField.getPassword()); }
+    public String getRole() { return (String) roleCombo.getSelectedItem(); }
 
-        // Dummy registration logic
-        if (!username.isEmpty() && !password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Registration successful for " + role + "!");
-            dispose();
-            new LoginView();
-        } else {
-            JOptionPane.showMessageDialog(this, "Please fill in all fields.");
-        }
+    public void setRegisterAction(ActionListener listener) {
+        registerButton.addActionListener(listener);
+    }
+
+    public void setBackAction(ActionListener listener) {
+        backButton.addActionListener(listener);
+    }
+
+    public void clearFields() {
+        usernameField.setText("");
+        passwordField.setText("");
+    }
+
+    public void showMessage(String message) {
+        JOptionPane.showMessageDialog(this, message);
     }
 }
