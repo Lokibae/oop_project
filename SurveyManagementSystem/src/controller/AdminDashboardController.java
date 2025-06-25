@@ -16,7 +16,6 @@ public class AdminDashboardController {
     private void initController() {
         view.getCreateSurveyBtn().addActionListener(e -> openSurveyCreation());
         view.getManageSurveysBtn().addActionListener(e -> openSurveyManagement());
-        view.getManageQuestionsBtn().addActionListener(e -> openQuestionManagement());
         view.getUserManagementBtn().addActionListener(e -> openUserManagement());
         view.getViewResultsBtn().addActionListener(e -> openSurveyResults());
         view.getLogoutBtn().addActionListener(e -> logout());
@@ -32,10 +31,6 @@ public class AdminDashboardController {
         managementView.setVisible(true);
     }
 
-    private void openQuestionManagement() {
-        QuestionManagementView questionView = new QuestionManagementView();
-        questionView.setVisible(true);
-    }
 
     private void openUserManagement() {
         AdminUserManagementView userView = new AdminUserManagementView();

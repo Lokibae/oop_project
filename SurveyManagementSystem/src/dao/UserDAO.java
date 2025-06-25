@@ -12,17 +12,14 @@ import java.util.List;
 public class UserDAO {
 
     public boolean userExists(String username) throws SQLException {
-        String query = "SELECT COUNT(*) FROM users WHERE username = ?";
+        String query = "SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?)";
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
             stmt.setString(1, username);
             ResultSet rs = stmt.executeQuery();
 
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
-            }
-            return false;
+            return rs.next() && rs.getInt(1) > 0;
         }
     }
 
@@ -59,6 +56,40 @@ public class UserDAO {
 
             int rows = stmt.executeUpdate();
             return rows > 0;
+        }
+    }
+    public boolean updateUsername(String oldUsername, String newUsername) throws SQLException {
+        try (Connection conn = Database.getConnection()) {
+            conn.setAutoCommit(true);
+
+            // Check if new username exists (case-sensitive)
+            String checkSql = "SELECT 1 FROM users WHERE username = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(checkSql)) {
+                stmt.setString(1, newUsername);
+                if (stmt.executeQuery().next()) {
+                    return false;
+                }
+            }
+
+            // Perform update using exact old username
+            String updateSql = "UPDATE users SET username = ? WHERE username = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(updateSql)) {
+                stmt.setString(1, newUsername);
+                stmt.setString(2, oldUsername);
+                int updated = stmt.executeUpdate();
+                return updated > 0;
+            }
+        }
+    }
+
+    public String getExactUsername(String username) throws SQLException {
+        // Remove LOWER() to use exact case matching
+        String query = "SELECT username FROM users WHERE username = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next() ? rs.getString("username") : null;
         }
     }
 
@@ -112,7 +143,7 @@ public class UserDAO {
 
     public List<User> getAllUsers() throws SQLException {
         List<User> users = new ArrayList<>();
-        String query = "SELECT * FROM users";
+        String query = "SELECT * FROM users"; // Simple query to get all users
 
         try (Connection conn = Database.getConnection();
              Statement stmt = conn.createStatement();

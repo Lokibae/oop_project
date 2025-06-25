@@ -168,4 +168,6 @@ public class AdminUserManagementController {
     private void showDatabaseError(String action, SQLException ex) {
         view.showErrorDialog("Error " + action + ": " + ex.getMessage());
     }
+
+
 }

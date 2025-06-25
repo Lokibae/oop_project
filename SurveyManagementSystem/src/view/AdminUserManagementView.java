@@ -2,13 +2,14 @@ package view;
 
 import dao.UserDAO;
 import model.User;
-
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class AdminUserManagementView extends JFrame {
     private JTextField searchField;
@@ -17,6 +18,7 @@ public class AdminUserManagementView extends JFrame {
     private DefaultTableModel tableModel;
     private JLabel currentUserLabel, adminStatusLabel;
     private UserDAO userDAO;
+    private Map<String, JPanel> userActionPanels = new HashMap<>();
 
     public AdminUserManagementView() {
         initializeDAO();
@@ -107,6 +109,12 @@ public class AdminUserManagementView extends JFrame {
         userTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
         userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < 2; i++) {
+            userTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
         TableColumn actionsColumn = userTable.getColumnModel().getColumn(2);
         actionsColumn.setCellRenderer(new ButtonRenderer());
         actionsColumn.setCellEditor(new ButtonEditor());
@@ -122,10 +130,16 @@ public class AdminUserManagementView extends JFrame {
 
     private void loadUsersFromDatabase() {
         try {
-            List<User> users = userDAO.getAllUsers();
             tableModel.setRowCount(0);
+            userActionPanels.clear();
+
+            List<User> users = userDAO.getAllUsers();
             for (User user : users) {
-                addUserToTable(user.getUsername(), user.getRole());
+                tableModel.addRow(new Object[]{
+                        user.getUsername(),
+                        user.getRole(),
+                        getOrCreateActionPanel(user.getUsername())
+                });
             }
         } catch (SQLException ex) {
             showErrorDialog("Error loading users: " + ex.getMessage());
@@ -133,30 +147,107 @@ public class AdminUserManagementView extends JFrame {
     }
 
     public JPanel addUserToTable(String username, String role) {
-        JButton editButton = new JButton("Edit");
-        JButton deleteButton = new JButton("Delete");
+        // Create a panel for action buttons
+        JPanel actionPanel = getOrCreateActionPanel(username);
 
-        // Style buttons
-        editButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        deleteButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        editButton.setBackground(new Color(70, 130, 180));
-        deleteButton.setBackground(new Color(220, 53, 69));
-        editButton.setForeground(Color.WHITE);
-        deleteButton.setForeground(Color.WHITE);
-        editButton.setFocusPainted(false);
-        deleteButton.setFocusPainted(false);
+        // Add the user data to the table
+        tableModel.addRow(new Object[]{
+                username,
+                role,
+                actionPanel
+        });
 
-        // Set action commands
-        editButton.setActionCommand("edit:" + username);
-        deleteButton.setActionCommand("delete:" + username);
-
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        actionPanel.setOpaque(true);
-        actionPanel.add(editButton);
-        actionPanel.add(deleteButton);
-
-        tableModel.addRow(new Object[]{username, role, actionPanel});
         return actionPanel;
+    }
+
+    private JPanel getOrCreateActionPanel(String username) {
+        if (userActionPanels.containsKey(username)) {
+            return userActionPanels.get(username);
+        }
+
+        // Create the panel with action buttons
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        panel.setOpaque(true);
+
+        JButton editButton = createActionButton("Edit", new Color(70, 130, 180),
+                e -> handleEditUser(username));
+        JButton deleteButton = createActionButton("Delete", new Color(220, 53, 69),
+                e -> handleDeleteUser(username));
+
+        panel.add(editButton);
+        panel.add(deleteButton);
+
+        userActionPanels.put(username, panel);  // Cache the panel
+        return panel;
+    }
+
+    private JButton createActionButton(String text, Color bgColor, ActionListener listener) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.addActionListener(listener);  // Attach listener to button
+        return button;
+    }
+
+    private void handleEditUser(String displayedUsername) {
+        try {
+            String currentUsername = userDAO.getExactUsername(displayedUsername);
+            if (currentUsername == null) {
+                showErrorDialog("User '" + displayedUsername + "' not found in database!");
+                loadUsersFromDatabase();
+                return;
+            }
+
+            String newUsername = JOptionPane.showInputDialog(
+                    this,
+                    "Enter new username:",
+                    "Edit User: " + currentUsername,
+                    JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (newUsername == null || newUsername.trim().isEmpty()) {
+                return;
+            }
+            newUsername = newUsername.trim();
+
+            boolean success = userDAO.updateUsername(currentUsername, newUsername);
+
+            if (success) {
+                loadUsersFromDatabase();
+                showSuccessDialog("Username updated successfully!");
+            } else {
+                showErrorDialog("Failed to update username. It may already exist.");
+                loadUsersFromDatabase();
+            }
+        } catch (SQLException ex) {
+            showErrorDialog("Database error: " + ex.getMessage());
+            loadUsersFromDatabase();
+        }
+    }
+
+    private void handleDeleteUser(String username) {
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to delete user '" + username + "'?",
+                "Confirm Delete",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                boolean success = userDAO.deleteUser(username);
+                if (success) {
+                    loadUsersFromDatabase();
+                    showSuccessDialog("User deleted successfully!");
+                } else {
+                    showErrorDialog("Failed to delete user. User might not exist.");
+                }
+            } catch (SQLException ex) {
+                showErrorDialog("Error deleting user: " + ex.getMessage());
+            }
+        }
     }
 
     public String getSearchText() {
@@ -180,7 +271,34 @@ public class AdminUserManagementView extends JFrame {
     }
 
     public void addSearchListener(ActionListener listener) {
-        searchButton.addActionListener(listener);
+        searchButton.addActionListener(e -> {
+            String searchText = getSearchText();  // Get the search input
+            clearTable();  // Clear the table before showing results
+
+            if (!searchText.isEmpty()) {
+                try {
+                    List<User> users = userDAO.searchUsers(searchText);  // Use the search method
+                    if (users.isEmpty()) {
+                        showErrorDialog("No users found for search term: " + searchText);
+                    } else {
+                        for (User user : users) {
+                            // Instead of calling addUserToTable, directly add rows to the table
+                            tableModel.addRow(new Object[]{
+                                    user.getUsername(),
+                                    user.getRole(),
+                                    getOrCreateActionPanel(user.getUsername())  // Use existing panel for actions
+                            });
+                        }
+                    }
+                } catch (SQLException ex) {
+                    showErrorDialog("Error during search: " + ex.getMessage());
+                }
+            } else {
+                showErrorDialog("Please enter a search term.");
+            }
+
+            searchField.setText("");  // Clear the search field after search attempt
+        });
     }
 
     public void showErrorDialog(String message) {
